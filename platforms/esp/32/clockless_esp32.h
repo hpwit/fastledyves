@@ -246,9 +246,9 @@ protected:
          */
         
         double freq=(double)1/(double)(T1ns + T2ns + T3ns);
-        Serial.printf("chipset frequency:%f Khz\n",1000000L*freq);
+        Serial.printf("chipset frequency:%f Khz\n", 1000000L*freq);
         freq=1000000000L*freq*gPulsesPerBit;
-        Serial.printf("needed frequency:%f\n",freq);
+        Serial.printf("needed frequency (nbpiulse per bit)*(chispset frequency):%f Mhz\n",freq/1000000);
         
         /*
          we do calculate the needed N a and b
@@ -257,8 +257,11 @@ protected:
          
          */
         
-         CLOCK_DIVIDER_N=floor(I2S_BASE_CLK/freq);
+         CLOCK_DIVIDER_N=(int)((double)I2S_BASE_CLK/freq);
         double v=I2S_BASE_CLK/freq-CLOCK_DIVIDER_N;
+   
+         
+        
         double prec=(double)1/63;
         int a=1;
        int b=0;
@@ -293,12 +296,12 @@ protected:
         //Serial.printf("freq %f %f\n",freq,I2S_BASE_CLK/(CLOCK_DIVIDER_N+(double)CLOCK_DIVIDER_B/CLOCK_DIVIDER_A));
         freq=1/(CLOCK_DIVIDER_N+(double)CLOCK_DIVIDER_B/CLOCK_DIVIDER_A);
         freq=freq*I2S_BASE_CLK;
-        Serial.printf("calculted for i2s frequency:%f N:%d B:%d A:%d\n",freq,CLOCK_DIVIDER_N,CLOCK_DIVIDER_B,CLOCK_DIVIDER_A);
+        Serial.printf("calculted for i2s frequency:%f Mhz N:%d B:%d A:%d\n",freq/1000000,CLOCK_DIVIDER_N,CLOCK_DIVIDER_B,CLOCK_DIVIDER_A);
         double pulseduration=1000000000/freq;
-        
+        Serial.printf("Pulse duration: %f ns\n",pulseduration);
        // gPulsesPerBit = (T1ns + T2ns + T3ns)/FASTLED_I2S_NS_PER_PULSE;
         
-        Serial.print("Pulses per bit: "); Serial.println(gPulsesPerBit);
+        //Serial.print("Pulses per bit: "); Serial.println(gPulsesPerBit);
         
         //int ones_for_one  = ((T1ns + T2ns - 1)/FASTLED_I2S_NS_PER_PULSE) + 1;
         ones_for_one  = T1/pgc_ +T2/pgc_;
