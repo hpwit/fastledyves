@@ -245,7 +245,8 @@ protected:
          
          */
         
-        float freq=(float)1/(float)(T1ns + T2ns + T3ns);
+        double freq=(double)1/(double)(T1ns + T2ns + T3ns);
+        Serial.printf("chipset frequency:%f Khz\n",1000000L*freq);
         freq=1000000000L*freq*gPulsesPerBit;
         Serial.printf("needed frequency:%f\n",freq);
         
@@ -257,8 +258,8 @@ protected:
          */
         
          CLOCK_DIVIDER_N=floor(I2S_BASE_CLK/freq);
-        float v=I2S_BASE_CLK/freq-CLOCK_DIVIDER_N;
-        float prec=(float)1/63;
+        double v=I2S_BASE_CLK/freq-CLOCK_DIVIDER_N;
+        double prec=(double)1/63;
         int a=1;
        int b=0;
         CLOCK_DIVIDER_A=1;
@@ -267,19 +268,19 @@ protected:
         {
             for(b=0;b<a;b++)
             {
-                //printf("%d %d %f %f %f\n",b,a,v,(float)v*(float)a,fabsf(v-(float)b/a));
-                if(fabsf(v-(float)b/a) <= prec/2)
+                //printf("%d %d %f %f %f\n",b,a,v,(double)v*(double)a,fabsf(v-(double)b/a));
+                if(fabsf(v-(double)b/a) <= prec/2)
                     break;
             }
-            if(fabsf(v-(float)b/a) ==0)
+            if(fabsf(v-(double)b/a) ==0)
             {
                 CLOCK_DIVIDER_A=a;
                 CLOCK_DIVIDER_B=b;
                 break;
             }
-            if(fabsf(v-(float)b/a) < prec/2)
+            if(fabsf(v-(double)b/a) < prec/2)
             {
-                if (fabsf(v-(float)b/a) <fabsf(v-(float)CLOCK_DIVIDER_B/CLOCK_DIVIDER_A))
+                if (fabsf(v-(double)b/a) <fabsf(v-(double)CLOCK_DIVIDER_B/CLOCK_DIVIDER_A))
                 {
                     CLOCK_DIVIDER_A=a;
                     CLOCK_DIVIDER_B=b;
@@ -288,10 +289,12 @@ protected:
             }
         }
         
-        //printf("%d %d %f %f %d\n",CLOCK_DIVIDER_B,CLOCK_DIVIDER_A,(float)CLOCK_DIVIDER_B/CLOCK_DIVIDER_A,v,CLOCK_DIVIDER_N);
-        //Serial.printf("freq %f %f\n",freq,I2S_BASE_CLK/(CLOCK_DIVIDER_N+(float)CLOCK_DIVIDER_B/CLOCK_DIVIDER_A));
-        freq=I2S_BASE_CLK/(CLOCK_DIVIDER_N+(float)CLOCK_DIVIDER_B/CLOCK_DIVIDER_A);
-        float pulseduration=1000000000/freq;
+        //printf("%d %d %f %f %d\n",CLOCK_DIVIDER_B,CLOCK_DIVIDER_A,(double)CLOCK_DIVIDER_B/CLOCK_DIVIDER_A,v,CLOCK_DIVIDER_N);
+        //Serial.printf("freq %f %f\n",freq,I2S_BASE_CLK/(CLOCK_DIVIDER_N+(double)CLOCK_DIVIDER_B/CLOCK_DIVIDER_A));
+        freq=1/(CLOCK_DIVIDER_N+(double)CLOCK_DIVIDER_B/CLOCK_DIVIDER_A);
+        freq=freq*I2S_BASE_CLK;
+        Serial.printf("calculted for i2s frequency:%f N:%d B:%d A:%d\n",freq,CLOCK_DIVIDER_N,CLOCK_DIVIDER_B,CLOCK_DIVIDER_A);
+        double pulseduration=1000000000/freq;
         
        // gPulsesPerBit = (T1ns + T2ns + T3ns)/FASTLED_I2S_NS_PER_PULSE;
         
