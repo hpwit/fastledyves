@@ -67,7 +67,8 @@ __attribute__ ((always_inline)) inline static uint32_t __clock_cycles() {
 
 // -- I2S clock
 #define I2S_BASE_CLK (80000000L)
-
+#define I2S_MAX_CLK (20000000L) //more tha a certain speed and the I2s looses some bits
+#define I2S_MAX_PULSE_PER_BIT 20 //put it higher to get more accuracy but it could decrease the refresh rate without real improvement
 // -- Convert ESP32 cycles back into nanoseconds
 #define ESPCLKS_TO_NS(_CLKS) (((long)(_CLKS) * 1000L) / F_CPU_MHZ)
 
@@ -114,8 +115,8 @@ static DMABuffer * dmaBuffers[NUM_DMA_BUFFERS];
 //    are global variables.
 
 static int      gPulsesPerBit = 0;
-static uint32_t gOneBit[20] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-static uint32_t gZeroBit[20]  = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+static uint32_t gOneBit[40] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+static uint32_t gZeroBit[40]  = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 // -- Counters to track progress
 static int gCurBuffer = 0;
@@ -199,7 +200,7 @@ protected:
         
         
         
-
+    Serial.println("Setting up fastled using I2S");
         // Precompute the bit patterns based on the I2S sample rate
         uint32_t T1ns = ESPCLKS_TO_NS(T1);
         uint32_t T2ns = ESPCLKS_TO_NS(T2);
@@ -222,12 +223,14 @@ protected:
             smallest=T1;
         if(smallest>T3)
             smallest=T3;
+        double freq=(double)1/(double)(T1ns + T2ns + T3ns);
+        Serial.printf("chipset frequency:%f Khz\n", 1000000L*freq);
        // Serial.printf("smallest %d\n",smallest);
         int pgc_=1;
         int precision=0;
         pgc_=pgcd(smallest,precision,T1,T2,T3);
-        //Serial.printf("%d %d\n",pgc_,T1/pgc_ +T2/pgc_ +T3/pgc_);
-        while(pgc_==1 ||  (T1/pgc_ +T2/pgc_ +T3/pgc_)>20)
+//Serial.printf("%f\n",I2S_MAX_CLK/(1000000000L*freq));
+        while(pgc_==1 ||  (T1/pgc_ +T2/pgc_ +T3/pgc_)>I2S_MAX_PULSE_PER_BIT) //while(pgc_==1 ||  (T1/pgc_ +T2/pgc_ +T3/pgc_)>I2S_MAX_CLK/(1000000000L*freq))
         {
             precision++;
             pgc_=pgcd(smallest,precision,T1,T2,T3);
@@ -245,8 +248,7 @@ protected:
          
          */
         
-        double freq=(double)1/(double)(T1ns + T2ns + T3ns);
-        Serial.printf("chipset frequency:%f Khz\n", 1000000L*freq);
+
         freq=1000000000L*freq*gPulsesPerBit;
         Serial.printf("needed frequency (nbpiulse per bit)*(chispset frequency):%f Mhz\n",freq/1000000);
         
@@ -290,6 +292,13 @@ protected:
                 }
                 
             }
+        }
+        //top take care of an issue with double 0.9999999999
+        if(CLOCK_DIVIDER_A==CLOCK_DIVIDER_B)
+        {
+            CLOCK_DIVIDER_A=1;
+            CLOCK_DIVIDER_B=0;
+            CLOCK_DIVIDER_N++;
         }
         
         //printf("%d %d %f %f %d\n",CLOCK_DIVIDER_B,CLOCK_DIVIDER_A,(double)CLOCK_DIVIDER_B/CLOCK_DIVIDER_A,v,CLOCK_DIVIDER_N);
